@@ -1,4 +1,4 @@
-Safety Sam:  The Hug Community's Therapuetic Companion (www.hugcommunity.org)
+Safety Sam:  The Hug Community's Therapeutic Companion (www.hugcommunity.org)
 =============================
 A project of Carver County Community Social Services (http://www.co.carver.mn.us/departments/CSS/).
 
