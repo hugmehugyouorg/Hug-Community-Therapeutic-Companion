@@ -60,7 +60,7 @@ void SafetySam::update() {
 	
 	if( hasUpdate ) {
 		_readyToPlay = true;
-		if( !_proxy->willOverflowOutgoing( Emotion::STATE_BITS + 1 + 2 * SafetySamVoice::STATE_BITS ) ) {
+		if( !_proxy->willOverflowOutgoing( _battery->getVoltage0BitLength() + _battery->getVoltage1BitLength() + _battery->getChargingBitLength() + Emotion::STATE_BITS + 1 + 2 * SafetySamVoice::STATE_BITS ) ) {
 			_proxy->startOutgoing();
 			_battery->getVoltage(voltage);
 			if(_debug) {
