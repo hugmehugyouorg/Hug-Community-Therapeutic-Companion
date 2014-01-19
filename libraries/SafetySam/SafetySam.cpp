@@ -1,9 +1,9 @@
 #include <SafetySam.h>
 
-SafetySam::SafetySam(SafetySamVoice *voice, Emotion *emotion, QuietTime *quiteTime, ServerProxy *proxy, Battery *battery, Stream *debug) :
+SafetySam::SafetySam(SafetySamVoice *voice, Emotion *emotion, PlayMessages *playMessages, ServerProxy *proxy, Battery *battery, Stream *debug) :
 	_voice(voice),
 	_emotion(emotion),
-	_quiteTime(quiteTime),
+	_playMessages(playMessages),
 	_proxy(proxy),
 	_battery(battery),
 	_debug(debug)
@@ -14,54 +14,111 @@ SafetySam::SafetySam(SafetySamVoice *voice, Emotion *emotion, QuietTime *quiteTi
 void SafetySam::begin() {
 	_voice->begin();
 	_emotion->begin();
-	_quiteTime->begin();
+	_playMessages->begin();
 	_proxy->begin();
 }
 
 void SafetySam::update() {
 	uint8_t emotionState;
+	boolean batteryUpdate = _battery->update();
 	boolean emotionUpdate = _emotion->update();
-	boolean quietTimeUpdate = _quiteTime->update();
-	boolean beQuiet = _quiteTime->isEnabled();
+	boolean playMessagesUpdate = _playMessages->update();
+	uint8_t playMessagesState = _playMessages->getState();
 	boolean proxyUpdate = _proxy->update();
 	const char* message = _proxy->getIncoming();
-	boolean hasUpdate;
+	boolean saidUpdate = false;
+	boolean messageSaidUpdate = false;
+	uint16_t msg;
 	uint8_t voltage[2];
+	uint8_t updateFlags = 0;
 	
-	//if the message can't be played on a server proxy update then
-	//set proxy update to false and reset incoming
+	//there was data received from the proxy
 	if(proxyUpdate) {
-		proxyUpdate = _voice->canSay(message);
-		if(!proxyUpdate) {
-			_proxy->resetIncoming();
+	
+		//turn the string into a message we can use
+		msg = _voice->strMsgToUintMsg(message);
+		
+		//store the message if it's playable
+		if(msg != SafetySamVoice::ERROR)
+			_playMessages->setMessage(msg);
+		else //else this is not a proxy update like we need
+			proxyUpdate = false;
+		
+		if(_debug) {
+			if(proxyUpdate)
+				_debug->print("Can say message: ");
+			else
+				_debug->print("Can't say message: ");
+			_debug->println(message);
+			_debug->print("message length: ");
+			_debug->println(strlen(message));
+			for(int i = 0; i < strlen(message); i++) {
+				_debug->print(message[i]);
+				_debug->print(", ");
+				_debug->println(message[i], DEC);
+			}
 		}
-	}
-	
-	hasUpdate = emotionUpdate || quietTimeUpdate || proxyUpdate || !_readyToPlay;
-	
-	if( proxyUpdate && !beQuiet ) {
-		_voice->say( message );
+		
+		//now reset the proxy, we've got what we need
 		_proxy->resetIncoming();
 	}
-	else if( emotionUpdate ) {
+	
+	//emotion feedback needs to be immediate
+	if( emotionUpdate ) {
 		emotionState = _emotion->getState();
 		switch( emotionState ) {
-			case Emotion::HAPPY: _quiteTime->end(); _voice->happy(); break;
-			case Emotion::UNHAPPY: _quiteTime->end(); _voice->unhappy(); break;
-			case Emotion::EMERGENCY: _quiteTime->end(); _voice->emergency(); break;
+			case Emotion::HAPPY: _voice->happy(); saidUpdate = true; break;
+			case Emotion::UNHAPPY: _voice->unhappy(); saidUpdate = true; break;
+			case Emotion::EMERGENCY: _voice->emergency(); saidUpdate = true; break;
 		}
 	} 
-	else if( quietTimeUpdate ) {
-		_voice->quietTime();
+	else if( playMessagesUpdate ) {
+		if(_playMessages->hasMessage()) {
+			_voice->say( _playMessages->getMessage() );
+			_playMessages->clearMessage();
+			messageSaidUpdate = true;
+		}
+		else if(_battery->isLowBatteryAlert()) {
+			_voice->batteryLow();
+			saidUpdate = true; 
+		}
+	}
+	else if(_playMessages->postUpdate() && _playMessages->hasMessage() ) {
+		//this allows for case where the internet is slow mainly...
+		//asking the user to hold until a response?
+		//What happens for the main case when there is no messages and not a low battery????
+		_voice->say( _playMessages->getMessage() );
+		_playMessages->clearMessage();
+		messageSaidUpdate = true; 
 	}
 	else if( !_readyToPlay ) {
 		_voice->readyToPlay();
+		saidUpdate = true;
 	}
 	
-	if( hasUpdate ) {
+	//specify what caused the update
+	if(saidUpdate)
+		updateFlags |= 32;
+	if(messageSaidUpdate)
+		updateFlags |= 16;
+	if(batteryUpdate)
+		updateFlags |= 8;
+	if(emotionUpdate)
+		updateFlags |= 4;
+	if(playMessagesUpdate)
+		updateFlags |= 2;
+	if(!_readyToPlay)
+		updateFlags |= 1;
+	
+	//there is an update if any submodule has an update or we are just now ready to play (on startup)
+	if( updateFlags > 0 ) {
 		_readyToPlay = true;
-		if( !_proxy->willOverflowOutgoing( _battery->getVoltage0BitLength() + _battery->getVoltage1BitLength() + _battery->getChargingBitLength() + Emotion::STATE_BITS + 1 + 2 * SafetySamVoice::STATE_BITS ) ) {
+		if( !_proxy->willOverflowOutgoing( STATE_BITS + _battery->getVoltage0BitLength() + _battery->getVoltage1BitLength() + _battery->getChargingBitLength() + Emotion::STATE_BITS + PlayMessages::STATE_BITS + 2 * SafetySamVoice::STATE_BITS ) ) {
 			_proxy->startOutgoing();
+			if(_debug) {
+				_debug->println("Update Flags (32 = said update, 16 = message said update, 8 = battery update, 4 = emotion update, 2 = play messages update, 1 = ready to play update... flags can be combined obviously)");
+			}
+			_proxy->setOutgoing(updateFlags, STATE_BITS);
 			_battery->getVoltage(voltage);
 			if(_debug) {
 				_debug->println("Voltage Reading (whole number, e.g. #.00):");
@@ -76,13 +133,13 @@ void SafetySam::update() {
 			}
 			_proxy->setOutgoing(_battery->getCharging(), _battery->getChargingBitLength());
 			if(_debug) {
-				_debug->println("Emotional State (0 - Happy, 1 - UNHAPPY, 2 - EMERGENCY)");
+				_debug->println("Emotional State (0 - None, 1 - Happy, 2 - UNHAPPY, 3 - EMERGENCY)");
 			}
 			_proxy->setOutgoing(_emotion->getState(), Emotion::STATE_BITS);
 			if(_debug) {
-				_debug->println("Is Quiet Time? (0 = NO, 1 = YES)");
+				_debug->println("Should Play Messages? (0 = NO, 1 = YES)");
 			}
-			_proxy->setOutgoing(_quiteTime->getState(), QuietTime::STATE_BITS);
+			_proxy->setOutgoing(playMessagesState, PlayMessages::STATE_BITS);
 			if(_debug) {
 				_debug->println("Last thing Safety Sam said:");
 			}
@@ -97,6 +154,6 @@ void SafetySam::update() {
 }
 
 boolean SafetySam::isProcessing() {
-	return _emotion->isProcessing() || _quiteTime->isProcessing() || _proxy->isProcessing();
+	return _battery->isProcessing() || _emotion->isProcessing() || _playMessages->isProcessing() || _proxy->isProcessing() || _voice->isProcessing();
 }
 

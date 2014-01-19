@@ -63,8 +63,6 @@ class ServerProxy {
 		const static uint8_t COMMAND_NOT_FOUND = 1;
 		
 		//parser constants
-		const static char OUTGOING_DATA_START[];
-		const static unsigned int OUTGOING_DATA_START_LENGTH;
 		const static char INCOMING_DATA_START[];
 		const static unsigned int INCOMING_DATA_START_LENGTH;
 		const static char DATA_END[];

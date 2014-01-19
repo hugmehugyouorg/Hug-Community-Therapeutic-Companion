@@ -1,10 +1,8 @@
 #include <ServerProxy.h>
 
-const char ServerProxy::OUTGOING_DATA_START[] = {'D', ':'};
-const unsigned int ServerProxy::OUTGOING_DATA_START_LENGTH = sizeof(OUTGOING_DATA_START) / sizeof(OUTGOING_DATA_START[0]);
 const char ServerProxy::INCOMING_DATA_START[] = {'H', 'T', 'T', 'P', '/', '1', '.', '1', ' ', '2', '0', '7', ' '};
 const unsigned int ServerProxy::INCOMING_DATA_START_LENGTH = sizeof(INCOMING_DATA_START) / sizeof(INCOMING_DATA_START[0]);
-const char ServerProxy::DATA_END[] = {'\n'};
+const char ServerProxy::DATA_END[] = {'\r', '\n'};
 const unsigned int ServerProxy::DATA_END_LENGTH = sizeof(DATA_END) / sizeof(DATA_END[0]);
 
 ServerProxy::ServerProxy(Stream *serial, Stream *debug) :

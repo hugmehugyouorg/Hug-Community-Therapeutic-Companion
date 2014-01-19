@@ -20,11 +20,16 @@ class SafetySamVoice  {
 		boolean canSay(const char* message);
 		boolean say(uint16_t message);
 		boolean say(const char* message);
+		uint16_t strMsgToUintMsg(const char* message);
 		uint16_t getLastSaid();
 		uint16_t getLastMessageSaid();
+		boolean isProcessing();
 		
 		//THE NUMBER OF BITS IN THE STATE
-		static const uint8_t STATE_BITS = 10;
+		static const uint8_t STATE_BITS = 9;
+		
+		//IN CASE WE NEED TO RETURN AN ERROR
+		static const uint16_t ERROR = 65535;
 		
 	//------------------------------------------------------------------------------
 	private:

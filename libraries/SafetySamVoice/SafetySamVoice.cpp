@@ -47,6 +47,12 @@ boolean SafetySamVoice::canSay(const char* message) {
 	return _player->canPlay(message) && canSay( _player->toId(message) );
 }
 
+uint16_t SafetySamVoice::strMsgToUintMsg(const char* message) {
+	if(canSay(message))
+		return _player->toId(message);
+	return ERROR;
+}
+
 boolean SafetySamVoice::say(uint16_t message) {
 	if( canSay(message) ) {
 		_player->play(message);
@@ -77,4 +83,8 @@ uint16_t SafetySamVoice::getLastSaid() {
 
 uint16_t SafetySamVoice::getLastMessageSaid() {
 	return _lastMessageSaid;
+}
+
+boolean SafetySamVoice::isProcessing() {
+	return _player->isPlaying();
 }
