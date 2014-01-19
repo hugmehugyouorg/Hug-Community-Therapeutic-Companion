@@ -62,6 +62,3 @@ void loop(){
   safetySam.update();
   //Serial.println(freeMemory());
 }
-
-
-
