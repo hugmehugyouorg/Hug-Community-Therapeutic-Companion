@@ -5,6 +5,9 @@
 
 class Battery  {
 	public:
+		virtual boolean update() = 0;  // Needs to be implemented by each subclass
+		virtual boolean isProcessing() = 0;  // Needs to be implemented by each subclass
+		virtual boolean isLowBatteryAlert() = 0;  // Needs to be implemented by each subclass
 		virtual double getVoltage() = 0;  // Needs to be implemented by each subclass
 		virtual void getVoltage(uint8_t* voltage) = 0;  // Needs to be implemented by each subclass
 		virtual uint8_t getCharging() = 0;  // Needs to be implemented by each subclass
