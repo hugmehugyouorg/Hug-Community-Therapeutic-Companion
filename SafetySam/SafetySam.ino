@@ -1,6 +1,6 @@
 #include <BatteryFioVThree.h>
 #include <Button2.h>
-#include <QuietTime.h>
+#include <PlayMessages.h>
 #include <Emotion.h>
 #include <Audio.h>
 #include <Wtv020sd16p.h>
@@ -14,7 +14,7 @@
 //button pins used
 #define HAPPY_PIN 9
 #define UNHAPPY_PIN 10
-#define QUIET_TIME_PIN 8
+#define PLAY_MESSAGES_PIN 8
 
 //audio pins used
 #define AUDIO_RESET_PIN 4
@@ -25,10 +25,10 @@
 //buttons
 Button2 btnHappy(HAPPY_PIN);
 Button2 btnUnhappy(UNHAPPY_PIN);
-Button2 btnQuietTime(QUIET_TIME_PIN);
+Button2 btnPlayMessages(PLAY_MESSAGES_PIN);
 
-//quiet time
-QuietTime quietTime(&btnQuietTime);
+//play messages
+PlayMessages playMessages(&btnPlayMessages);
 
 //emotions
 Emotion emotion(&btnHappy, &btnUnhappy);
@@ -43,13 +43,13 @@ SafetySamVoice voice(&player);
 BatteryFioVThree battery;
 
 //Server proxy
-//ServerProxy proxy(&Serial1); //Fio V3 w/o debugging
-ServerProxy proxy(&Serial1, &Serial); //Fio V3 w/ debugging
+ServerProxy proxy(&Serial1); //Fio V3 w/o debugging
+//ServerProxy proxy(&Serial1, &Serial); //Fio V3 w/ debugging
 //ServerProxy proxy(&Serial); //No wifi, just Computer
 
 //safety sam
-//SafetySam safetySam(&voice, &emotion, &quietTime, &proxy, (Battery*) &battery); // w/o debugging
-SafetySam safetySam(&voice, &emotion, &quietTime, &proxy, (Battery*) &battery, &Serial); // w/ debugging
+SafetySam safetySam(&voice, &emotion, &playMessages, &proxy, (Battery*) &battery); // w/o debugging
+//SafetySam_v_0_0_1 safetySam(&voice, &emotion, &playMessages, &proxy, (Battery*) &battery, &Serial); // w/ debugging
 
 void setup(){
   Serial.begin(9600);
