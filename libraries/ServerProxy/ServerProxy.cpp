@@ -1,5 +1,6 @@
 #include <ServerProxy.h>
 
+char ServerProxy::WIFI_BOOTUP = '\0';
 const char ServerProxy::INCOMING_DATA_START[] = {'H', 'T', 'T', 'P', '/', '1', '.', '1', ' ', '2', '0', '7', ' '};
 const unsigned int ServerProxy::INCOMING_DATA_START_LENGTH = sizeof(INCOMING_DATA_START) / sizeof(INCOMING_DATA_START[0]);
 const char ServerProxy::DATA_END[] = {'\r', '\n'};
@@ -7,33 +8,79 @@ const unsigned int ServerProxy::DATA_END_LENGTH = sizeof(DATA_END) / sizeof(DATA
 
 ServerProxy::ServerProxy(Stream *serial, Stream *debug) :
 	_serial(serial),
-	_debug(debug)
+	_debug(debug),
+	_state(CLOSED),
+	_last_outgoing_sent_time(0)
 {
 	resetOutgoing();
 	resetIncoming();
 }
 
 void ServerProxy::begin() {
+	bootup();
+}
+
+void ServerProxy::bootup() {
+
+	//if closed then we need to bootup the wifi first
+	if(_state == CLOSED) {
+	
+		//give it time in case it just closed
+		delay(50);
+		if( _debug != NULL) 
+			_debug->println("BOOTING");
+		
+		_serial->write(WIFI_BOOTUP);
+		_state = BOOTING;
+		
+	}
+	
 }
 
 boolean ServerProxy::update() {
 	char in;
-	while(_serial->available() > 0) {
-		//if there is data to be processed then process it
-		in = (char)_serial->read();
-		if( setIncoming( in ) ) {
-			return true;
+	boolean serverUpdate = false;
+	
+	//if there is pending data we should send it
+	if(_needToFlush) {
+	
+		if(_state == OPENED) {
+		
+			endOutgoing();
+			
 		}
+		else 
+			bootup();
 	}
+	
+	//if there is data to be processed then process it
+	while(_serial->available() > 0) {
+		
+		in = (char)_serial->read();
+		
+		//returns true if there was a server update
+		serverUpdate = setIncoming( in );
+			
+		//let the world know the truth
+		if( serverUpdate )
+			return true;
+			
+	}
+	
 	return false;
 }
 
+//if something to read or something to write then we are processing
 boolean ServerProxy::isProcessing() {
-	return (_serial->available() > 0);
+	return (_serial->available() > 0) || _needToFlush;
 }
 
-void ServerProxy::startOutgoing() {
-	_outgoing = true;
+boolean ServerProxy::isWaitingToFlush() {
+	return _needToFlush;
+}
+
+unsigned long ServerProxy::getLastOutgoingSentTime() {
+	return _last_outgoing_sent_time;
 }
 
 boolean ServerProxy::willOverflowOutgoing(uint32_t numBits) {
@@ -46,9 +93,6 @@ boolean ServerProxy::setOutgoing(uint32_t out, uint8_t numBits) {
 	
 	if(willOverflowOutgoing(numBits))
 		return false;
-		
-	if(!_outgoing)
-		startOutgoing();
 	
 	uint8_t byteIndex;
 	uint8_t bitIndex;
@@ -106,6 +150,15 @@ void ServerProxy::endOutgoing() {
 	uint8_t out = 0;
 	uint8_t bit = 0;
 	uint8_t bytesWritten = 0;
+	uint8_t bytesActuallyWritten = 0;
+	
+	if(_outLengthInBits == 0)
+		return;
+	
+	if( _state != OPENED ) {
+		_needToFlush = true;
+		return;
+	}
 	
 	while(bits < _outLengthInBits) {
 		byteIndex = floor(bits / 8.0);
@@ -145,14 +198,17 @@ void ServerProxy::endOutgoing() {
 		_debug->println(bytesWritten);
 	}
 	
-	bytesWritten = _serial->write(_out, bytesWritten);
+	bytesActuallyWritten = _serial->write(_out, bytesWritten);
 	
 	if(_debug != NULL) {
 		_debug->print("bytes written: ");
-		_debug->println(bytesWritten);
+		_debug->println(bytesActuallyWritten);
 	}
 		
-	resetOutgoing();
+	if(bytesActuallyWritten != 0) {
+		_last_outgoing_sent_time = millis();
+		resetOutgoing();
+	}
 }
 
 const char* ServerProxy::getIncoming() {
@@ -162,7 +218,7 @@ const char* ServerProxy::getIncoming() {
 void ServerProxy::resetOutgoing() {
 	memset(_out,0,sizeof(_out));
 	_outLengthInBits = 0;
-	_outgoing = false;
+	_needToFlush = false;
 }
 
 void ServerProxy::resetIncoming() {
@@ -186,7 +242,17 @@ boolean ServerProxy::setIncoming( char in ) {
 		} //the data does not match the protocol, so start looking for the command again
 		else {
 			_commandParsePosition = 0;
+			if(in == INCOMING_WIFI_START) 
+				_inState = WIFI_STATE_FOUND;
 		}
+	} 
+	else if(_inState == WIFI_STATE_FOUND) {
+		switch(in) {
+			case INCOMING_READY : _state = READY; if(_debug != NULL) _debug->println("READY"); break;
+			case INCOMING_OPENED : _state = OPENED; if(_debug != NULL) _debug->println("OPENED"); break;
+			case INCOMING_CLOSED : _state = CLOSED; if(_debug != NULL) _debug->println("CLOSED"); break;
+		}
+		_inState = COMMAND_NOT_FOUND;
 	} //we can't handle anymore, doesn't follow protocol, so start looking for the command again
 	else if(_inLen > LAST_INDEX) {
 		resetIncoming();

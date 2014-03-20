@@ -71,25 +71,17 @@ void SafetySam::update() {
 			case Emotion::UNHAPPY: _voice->unhappy(); saidUpdate = true; break;
 			case Emotion::EMERGENCY: _voice->emergency(); saidUpdate = true; break;
 		}
-	} 
-	else if( playMessagesUpdate ) {
+	} //playMessagesState allows for the case where the internet is slow mainly...
+	else if( playMessagesUpdate || playMessagesState ) {
 		if(_playMessages->hasMessage()) {
 			_voice->say( _playMessages->getMessage() );
 			_playMessages->clearMessage();
 			messageSaidUpdate = true;
-		}
-		else if(_battery->isLowBatteryAlert()) {
+		} //no messages, but a low battery
+		else if(playMessagesUpdate && _battery->isLowBatteryAlert()) {
 			_voice->batteryLow();
 			saidUpdate = true; 
 		}
-	}
-	else if(_playMessages->postUpdate() && _playMessages->hasMessage() ) {
-		//this allows for case where the internet is slow mainly...
-		//asking the user to hold until a response?
-		//What happens for the main case when there is no messages and not a low battery????
-		_voice->say( _playMessages->getMessage() );
-		_playMessages->clearMessage();
-		messageSaidUpdate = true; 
 	}
 	else if( !_readyToPlay ) {
 		_voice->readyToPlay();
@@ -110,11 +102,13 @@ void SafetySam::update() {
 	if(!_readyToPlay)
 		updateFlags |= 1;
 	
-	//there is an update if any submodule has an update or we are just now ready to play (on startup)
-	if( updateFlags > 0 ) {
+	//there is an update if any submodule has an update or we are just now ready to play (on startup) or the watchdawg bit
+	if( updateFlags > 0 || watchDawgBit() ) {
+	
 		_readyToPlay = true;
+		
 		if( !_proxy->willOverflowOutgoing( STATE_BITS + _battery->getVoltage0BitLength() + _battery->getVoltage1BitLength() + _battery->getChargingBitLength() + Emotion::STATE_BITS + PlayMessages::STATE_BITS + 2 * SafetySamVoice::STATE_BITS ) ) {
-			_proxy->startOutgoing();
+			
 			if(_debug) {
 				_debug->println("Update Flags (32 = said update, 16 = message said update, 8 = battery update, 4 = emotion update, 2 = play messages update, 1 = ready to play update... flags can be combined obviously)");
 			}
@@ -150,10 +144,15 @@ void SafetySam::update() {
 			_proxy->setOutgoing(_voice->getLastMessageSaid(), SafetySamVoice::STATE_BITS);
 			_proxy->endOutgoing();
 		}
+		
 	}
 }
 
 boolean SafetySam::isProcessing() {
 	return _battery->isProcessing() || _emotion->isProcessing() || _playMessages->isProcessing() || _proxy->isProcessing() || _voice->isProcessing();
+}
+
+boolean SafetySam::watchDawgBit() {
+	return !_proxy->isWaitingToFlush() && (millis() - _proxy->getLastOutgoingSentTime()) > WATCHDAWG_SHOULD_BITE;
 }
 

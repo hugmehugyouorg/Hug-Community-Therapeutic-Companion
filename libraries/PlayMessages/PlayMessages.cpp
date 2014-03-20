@@ -2,8 +2,7 @@
 
 PlayMessages::PlayMessages(Button2 *button) :
 	_button(button),
-	_state(false),
-	_postState(false),
+	_playMessage(false),
 	_msg(SafetySamVoice::ERROR)
 {
 }
@@ -20,27 +19,19 @@ boolean PlayMessages::update() {
 	buttonState = _button->update();
 	
 	if( buttonState == Button2::PRESS || buttonState == Button2::RAPID_PRESS ) {
-		_state = true;
-		rv = true;
+		_playMessage = rv = true;
 	}
 	else {
 		rv = false;
+		if(_playMessage && buttonState != Button2::PRESSING)
+			_playMessage = false;
 	}
-	
-	if(_state && (rv || buttonState == Button2::PRESSING) )
-		_postState = true;
-	else
-		_postState = false;
 	
 	return rv;
 }
 
-boolean PlayMessages::postUpdate() {
-	return _postState;
-}
-
 boolean PlayMessages::isProcessing() {
-	return _button->isProcessing() || (_postState && hasMessage());
+	return _button->isProcessing() || _playMessage;
 }
 
 void PlayMessages::setMessage(uint16_t msg) {
@@ -58,10 +49,10 @@ uint16_t PlayMessages::getMessage() {
 }
 
 void PlayMessages::clearMessage() {
-	_state = _postState = false;
+	_playMessage = false;
 	_msg = SafetySamVoice::ERROR;
 }
 
 uint8_t PlayMessages::getState() {
-	return _state ? 1 : 0;
+	return _playMessage ? 1 : 0;
 }

@@ -25,8 +25,7 @@ class PlayMessages  {
 	private:
 		Button2 *_button;
 		
-		boolean _state;
-		boolean _postState;
+		boolean _playMessage;
 		
 		uint16_t _msg;
 };

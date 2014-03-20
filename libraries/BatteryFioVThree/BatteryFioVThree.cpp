@@ -29,8 +29,8 @@ boolean BatteryFioVThree::update() {
 
 boolean BatteryFioVThree::isProcessing() {
 	//if charging then processing
-	if(_chargeState == CHARGING)
-		return true;
+	//if(_chargeState == CHARGING)
+		//return true;
 		
 	//otherwise we are not processing
 	return false;

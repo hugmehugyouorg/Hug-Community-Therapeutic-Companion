@@ -18,6 +18,8 @@ class SafetySam {
 		
 	//------------------------------------------------------------------------------
 	private:
+		boolean watchDawgBit();
+	
 		SafetySamVoice *_voice;
 		Emotion *_emotion;
 		PlayMessages *_playMessages;
@@ -28,6 +30,9 @@ class SafetySam {
 		
 		//THE NUMBER OF BITS IN THE STATE
 		static const uint8_t STATE_BITS = 6;
+		
+		//WATCHDAWG
+		static const unsigned long WATCHDAWG_SHOULD_BITE = 300000; //30000 = 30 seconds, 300000 = 5 minutes
 };
 
 #endif // SAFETY_SAM_ssH
