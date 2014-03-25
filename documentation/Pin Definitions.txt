@@ -1,0 +1,92 @@
+(PIN 12) GPIO-13 UART_RTS (OUTPUT) - (DEFAULT) Goes HIGH on POWERUP, LOW once system is READY
+(PIN 8) GPIO-9 (INPUT) - (DEFAULT) ADHOC MODE (3.3V to pin 8) & FACTORY RESET (3.3V to pin 8, 5 x 1sec duration)
+
+GPIO8 ALTERNATIVE FUNCTION
+set sys trigger 0x20
+
+(PIN 4) GPIO-8 (INPUT) - HIGH (4 μs latency) will sleep module 
+
+CTS ALTERNATIVE FUNCTION
+set sys trigger 2
+
+(PIN 16) UART_CTS (INPUT) - (HIGH/LOW???) use a 3.3-V signal.  Is tied to sensor pin 1 via a resistor divider network.
+
+GPIO4, 5 & 6 ALTERNATIVE FUNCTIONS
+set sys iofunc 0x70
+
+(PIN 13) GPIO4 (OUTPUT) - HIGH after the module has associated/authenticated and has an IP address.
+(PIN 6) GPIO5 (INPUT) - HIGH to trigger a TCP connection and LOW to disconnect.
+(PIN 15) GPIO6 (OUTPUT) - HIGH when the module is connected over TCP and LOW when disconnected.
+
+
+//CONNECT TO WEB SERVER WHEN UART DATA IS RECEIVED
+set wlan hide 1 //hides the WPA password when displaying WLAN settings
+set wlan ssid ??? //router to connect to
+set wlan pass ??? //password
+set wlan auth 3 //Mixed WPA1 and WPA2-PSK
+set wlan channel 6
+set ip dhcp 3 //turns on DHCP cache mode.  The module uses a previously set IP address if the lease is not expired (or the lease survives reboot).  Quickens power up and wake from sleep by obtaining IP address more quickly.
+set wlan linkmon 30  //infrastructure mode only. # of failed scans for AP before declares AP is Lost and de-authenticates, if not set no way to detect access point no longer present until becomes available again (if ever).  Roving Networks recommends setting this to 30 since some access points don't respond to probes.
+//set opt average //avg RSSI based on set opt average (# of RSSI samples to calculate running average:  default 5) 
+//set opt signal 70 //signal strength threshold in -dBm.  if falls below will declare AP is lost and deauthenticate. (default: 0)
+set opt jointmr 5000 //WPA takes longer than default to negotiate
+set wlan join 1 //auto-join access point on power up or wake from sleep
+set wlan rate 0 //wireless data rate set to min of 1Mbit/Sec to maximize effective range of the module
+set sys autoconn 2 //If set to 2 or higher, auto connect re-opens the connection after the connection is closed
+//set sys autoconn 255 //auto-connect to the stored ip on power up or wake and then IMMEDIATELY go back to sleep on TCP disconnect
+set time address 216.171.120.36 //nist1-chi.ustiming.org, Chicago, IL
+set time zone 5 //GMT-6, Chicago, IL
+set time enable 1 //get the time whenever wake up
+set sys trig 1 //enable wake on RXD, make sure to send preamble byte first
+set sys wake 1 //wake after 1 seconds of sleep
+//set sys sleep 10 //DON'T USE THIS... NOTICED ROUTER FAILED!!!  sleep 10 seconds after TCP disconnect
+set sys printlvl 0 //Quiet mode. Messages are not printed when the module wakes up or powers up.
+
+
+//set sys printlvl 2 //Print only critical network access point connection level status, e.g., Associated! or Disconnect from <SSID>.
+//ACTUAL EXAMPLES OF WHAT OCCURS
+//ON REBOOT OF RN-XV:
+//Associated!
+//192.168.2.2255.255.255.0
+//192.168.2.1
+
+//ON REBOOT OF ROUTER
+//Disconn from Belkin.3D0E,1:7
+//Associated!
+
+//set sys iofunc 0x70 //NEED TO TEST!!! enable alternative GPIO4-6
+set ip proto 18 // Turn on HTTP mode = 0x10 and TCP mode = 0x2 (client/server mode I guess)
+
+
+//THE BACKUP FUNCTIONALITY ONLY SEEMS TO WORK IF YOU USE THE "open" COMMAND or on power up/wake with 'set sys autoconnect'
+set dns name ??? //this is used if ip host fails and ip backup fails
+set dns backup ??? //this is used if ip host fails and ip backup fails and dns host fails
+set ip host ??? //primary host to connect to
+set ip backup ??? //backup if host is down
+
+
+set ip remote 80 //port
+set ip flags 0x6 // if the module loses the access point connection while TCP is connected, the connection is closed.  If this is not set then there is a chance of never recovering
+set ip tcp-mode 0x10 //disable remote configuration
+set option format 2 //Send users binary data (converted to ASCII hex).
+set broadcast interval 0 //disables UDP broadcast messages
+set uart mode 2 //Use the set uart mode 2 command to connect the to host automatically when UART data is received.
+set comm open 0 //inform me on open
+set comm close 0 //inform me on close
+set com remote GET$/?i=1&d=
+
+/* SETTINGS IF TRYING TO SAVE ENERGY */
+//sleeping for 5 minutes, already waking on RXD if microcontroller has data to send, only connecting on wake or uart data received
+//if connected and no data back and forth (idle) for 30 seconds then disconnect and immediately go to sleep after TCP Disconnect
+//sleep if can't connect after trying for 30 seconds
+set sys autoconn 255 //Connect to a stored host IMMEDIATELY upon power up or when waking from sleep and go back to sleep IMMEDIATELY as soon as the TCP connection closes (set uart mode 2 connects on data received)
+set comm idle 30 //30 seconds during which no data is transmitted or received over TCP before the connection is closed automatically.
+set sys sleep 30 //30 seconds after being awake, regardless if not connected, go to sleep
+set sys wake 300 //wake after 5 minutes of sleep
+
+//we need this to be able to determine state in order to try and send messages or not
+set comm open *O //inform me on open
+set comm close *CLOSE* //inform me on close, needs to be longer cause losing characters not getting to the end cause it sleeps to soon
+set sys printlvl 1 //Print all status messages.
+
+set time enable 0 //do not get the time whenever wake up

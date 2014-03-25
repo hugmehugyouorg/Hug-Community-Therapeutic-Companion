@@ -78,11 +78,7 @@ BatteryFioVThree battery;
 #ifdef SAFETY_SAM_DEBUG
 
   //Server proxy
-  #ifdef __AVR_ATmega32U4__
-    ServerProxy proxy(&Serial1, &Serial);
-  #else
-    ServerProxy proxy(&Serial, &Serial);
-  #endif
+  ServerProxy proxy(&Serial1, &Serial);
   
   //safety sam
   SafetySam safetySam(&voice, &emotion, &playMessages, &proxy, (Battery*) &battery, &Serial);
@@ -92,11 +88,7 @@ BatteryFioVThree battery;
 #else
 
   //Server proxy
-  #ifdef __AVR_ATmega32U4__
-    ServerProxy proxy(&Serial1);
-  #else
-    ServerProxy proxy(&Serial);
-  #endif
+  ServerProxy proxy(&Serial1);
   
   //safety sam
   SafetySam safetySam(&voice, &emotion, &playMessages, &proxy, (Battery*) &battery);
@@ -189,9 +181,12 @@ void goToSleep()
         *
         *     See http://www.rocketscream.com/blog/2011/07/04/lightweight-low-power-arduino-library/
         *     Mini Ultra 8 MHz uses probably between 687.0 µA - 832.0 µA with this sort of config, not sure about fio v3 though
-        *     LowPower.idle(SLEEP_FOREVER, ADC_OFF, TIMER4_OFF, TIMER3_OFF, TIMER1_OFF, TIMER0_OFF, SPI_OFF, USART1_ON, TWI_OFF, USB_OFF);
+        *     See http://harizanov.com/2013/02/power-saving-techniques-on-the-atmega32u4/ for a start though since that's the basis
+        *     9.97mA - 12.3mA
+        *     TIMER0_ON for millis() function to work properly when determining safety sam watchdawg
+        *     USB_ON for debugging, but most especially cause otherwise can't set new firmware without a hard reset (dbl tap reset button)
         **/
-        LowPower.idle(SLEEP_FOREVER, ADC_OFF, TIMER4_OFF, TIMER3_OFF, TIMER1_OFF, TIMER0_OFF, SPI_OFF, USART1_ON, TWI_OFF, USB_ON);
+        LowPower.idle(SLEEP_FOREVER, ADC_OFF, TIMER4_OFF, TIMER3_OFF, TIMER1_OFF, TIMER0_ON, SPI_OFF, USART1_ON, TWI_OFF, USB_ON);
         //pcDetachInterrupt();
         
         #ifdef SAFETY_SAM_DEBUG
@@ -201,12 +196,13 @@ void goToSleep()
 }
 
 void setup(){
-  Serial.begin(9600);
   Serial1.begin(9600);
-
+  
   #ifdef SAFETY_SAM_DEBUG
-    waitForSerialMonitor();
+    Serial.begin(9600);
   #endif
+  
+  waitForSerialMonitor();
   
   //Serial.println(freeMemory());
   safetySam.begin();
@@ -243,10 +239,14 @@ void waitForSerialMonitor() {
  // allow a little time to connect the serialMonitor before running the rest of the setup.
   for (int i = 10; i>0; i--) {
     delay(1000);
-    Serial.print(F(" "));
-    Serial.print(i);
+    #ifdef SAFETY_SAM_DEBUG
+      Serial.print(F(" "));
+      Serial.print(i);
+    #endif
   } 
-  Serial.println(F(" "));
-  Serial.println(F("------- SERIAL MONITOR READY -------"));
+  #ifdef SAFETY_SAM_DEBUG
+    Serial.println(F(" "));
+    Serial.println(F("------- SERIAL MONITOR READY -------"));
+  #endif
 }
 

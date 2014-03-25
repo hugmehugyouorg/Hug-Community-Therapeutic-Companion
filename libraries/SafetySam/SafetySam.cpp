@@ -44,7 +44,7 @@ void SafetySam::update() {
 		else //else this is not a proxy update like we need
 			proxyUpdate = false;
 		
-		if(_debug) {
+		if(_debug != NULL) {
 			if(proxyUpdate)
 				_debug->print("Can say message: ");
 			else
@@ -109,36 +109,36 @@ void SafetySam::update() {
 		
 		if( !_proxy->willOverflowOutgoing( STATE_BITS + _battery->getVoltage0BitLength() + _battery->getVoltage1BitLength() + _battery->getChargingBitLength() + Emotion::STATE_BITS + PlayMessages::STATE_BITS + 2 * SafetySamVoice::STATE_BITS ) ) {
 			
-			if(_debug) {
+			if(_debug != NULL) {
 				_debug->println("Update Flags (32 = said update, 16 = message said update, 8 = battery update, 4 = emotion update, 2 = play messages update, 1 = ready to play update... flags can be combined obviously)");
 			}
 			_proxy->setOutgoing(updateFlags, STATE_BITS);
 			_battery->getVoltage(voltage);
-			if(_debug) {
+			if(_debug != NULL) {
 				_debug->println("Voltage Reading (whole number, e.g. #.00):");
 			}
 			_proxy->setOutgoing(voltage[0], _battery->getVoltage0BitLength());
-			if(_debug) {
+			if(_debug != NULL) {
 				_debug->println("Voltage (after decimal point, e.g. 0.##):");
 			}
 			_proxy->setOutgoing(voltage[1], _battery->getVoltage1BitLength());
-			if(_debug) {
+			if(_debug != NULL) {
 				_debug->println("Is Charging? (0 = NO, 1 = YES)");
 			}
 			_proxy->setOutgoing(_battery->getCharging(), _battery->getChargingBitLength());
-			if(_debug) {
+			if(_debug != NULL) {
 				_debug->println("Emotional State (0 - None, 1 - Happy, 2 - UNHAPPY, 3 - EMERGENCY)");
 			}
 			_proxy->setOutgoing(_emotion->getState(), Emotion::STATE_BITS);
-			if(_debug) {
+			if(_debug != NULL) {
 				_debug->println("Should Play Messages? (0 = NO, 1 = YES)");
 			}
 			_proxy->setOutgoing(playMessagesState, PlayMessages::STATE_BITS);
-			if(_debug) {
+			if(_debug != NULL) {
 				_debug->println("Last thing Safety Sam said:");
 			}
 			_proxy->setOutgoing(_voice->getLastSaid(), SafetySamVoice::STATE_BITS);
-			if(_debug) {
+			if(_debug != NULL) {
 				_debug->println("Last Safety Team message Safety Sam said.");
 			}
 			_proxy->setOutgoing(_voice->getLastMessageSaid(), SafetySamVoice::STATE_BITS);
