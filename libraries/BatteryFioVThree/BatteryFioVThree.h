@@ -28,7 +28,7 @@ class BatteryFioVThree : public Battery {
 		boolean _lowBatteryAlert;
 		
 		//THE LOW BATTERY THRESHOLD
-		static const double LOW_BATTERY = 3.0;
+		static const double LOW_BATTERY = 3.5;
 		
 		//THE NUMBER OF BITS IN THE VOLTAGE
 		static const uint8_t VOLTAGE_BITS = 32;

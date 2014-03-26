@@ -18,7 +18,7 @@ boolean BatteryFioVThree::update() {
 	if(chargeState)
 		_lowBatteryAlert = false;
 		
-	if(!chargeState && !_lowBatteryAlert && getVoltage() < 3.5)
+	if(!chargeState && !_lowBatteryAlert && getVoltage() < LOW_BATTERY)
 	{
 		_lowBatteryAlert = true;
 		rv = true;
