@@ -77,7 +77,7 @@ void SafetySam::update() {
 			_voice->say( _playMessages->getMessage() );
 			_playMessages->clearMessage();
 			messageSaidUpdate = true;
-		} //no messages, but a low battery
+		} //no messages, report energy level
 		else if(playMessagesUpdate) {
 			if(_battery->isLowBatteryAlert())
 				_voice->batteryLow();
