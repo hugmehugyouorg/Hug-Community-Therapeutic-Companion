@@ -78,8 +78,11 @@ void SafetySam::update() {
 			_playMessages->clearMessage();
 			messageSaidUpdate = true;
 		} //no messages, but a low battery
-		else if(playMessagesUpdate && _battery->isLowBatteryAlert()) {
-			_voice->batteryLow();
+		else if(playMessagesUpdate) {
+			if(_battery->isLowBatteryAlert())
+				_voice->batteryLow();
+			else
+				_voice->batteryCharged();
 			saidUpdate = true; 
 		}
 	}

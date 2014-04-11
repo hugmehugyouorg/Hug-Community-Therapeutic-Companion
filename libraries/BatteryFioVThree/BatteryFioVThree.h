@@ -17,7 +17,6 @@ class BatteryFioVThree : public Battery {
 		virtual uint8_t getChargingBitLength();
 		
 		BatteryFioVThree();
-		double readVcc();
 		
 	private:
 		
@@ -27,8 +26,9 @@ class BatteryFioVThree : public Battery {
 		uint8_t _chargeState;
 		boolean _lowBatteryAlert;
 		
-		//THE LOW BATTERY THRESHOLD
-		static const double LOW_BATTERY = 3.5;
+		//THRESHOLDS
+		static const double CHARGING_THRESHOLD = 4.2;
+		static const double LOW_BATTERY_THRESHOLD = 3.7;
 		
 		//THE NUMBER OF BITS IN THE VOLTAGE
 		static const uint8_t VOLTAGE_BITS = 32;

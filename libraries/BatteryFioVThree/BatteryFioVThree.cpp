@@ -7,32 +7,20 @@ BatteryFioVThree::BatteryFioVThree()
 }
 
 boolean BatteryFioVThree::update() {
-	uint8_t chargeState = getCharging();
 	boolean rv = false;
-	
-	if(_chargeState != chargeState) {
-		_chargeState = chargeState;
-		rv = true;
-	}
-	
-	if(chargeState)
-		_lowBatteryAlert = false;
-		
-	if(!chargeState && !_lowBatteryAlert && getVoltage() < LOW_BATTERY)
-	{
-		_lowBatteryAlert = true;
-		rv = true;
-	}
+	double voltage = getVoltage();
+	//logic here is that the 3.7V lipo battery should not be able to reach over CHARGING_THRESHOLD volts
+	//so if that is the case we're going to assume we are not battery powered
+	_chargeState = (voltage > CHARGING_THRESHOLD ? 1 : 0);
+	//logic here is that if the 3.7V lipo battery goes under LOW_BATTERY_THRESHOLD volts
+	//then we're going to alert
+	_lowBatteryAlert = (voltage < LOW_BATTERY_THRESHOLD ? true : false);
 		
 	return rv;
 }
 
 boolean BatteryFioVThree::isProcessing() {
-	//if charging then processing
-	//if(_chargeState == CHARGING)
-		//return true;
-		
-	//otherwise we are not processing
+	//never processing
 	return false;
 }
 
@@ -56,18 +44,8 @@ void BatteryFioVThree::getVoltage(uint8_t* voltage) {
 	voltage[1] = round((v - voltage[0]) * 100);
 }
 
-//logic here is that the 3.7V lipo battery should not be able to reach over 4.2V
-//so if that is the case we're going to assume we are not battery powered
 uint8_t BatteryFioVThree::getCharging() {
-	return (readVcc() > 4.2 || getVoltage() > 4.2 ? 1 : 0);
-}
-
-//SEE http://provideyourown.com/2012/secret-arduino-voltmeter-measure-battery-voltage/
-double BatteryFioVThree::readVcc() {
-  double Vcc = 5.0; // not necessarily true
-int value = analogRead(0);
-double volt = (value / 1023.0) * Vcc; // only correct if Vcc = 5.0 volts
-return volt;
+	return _chargeState;
 }
 
 uint8_t BatteryFioVThree::getVoltageBitLength() {
