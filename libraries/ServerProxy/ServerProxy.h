@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include <Stream.h>
-#include "../Command/Command.h"
 
 /*
 OUTGOING (wifi device auto-adding: GET$/?i=DEVICE_ID&d=):
