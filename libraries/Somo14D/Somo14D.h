@@ -3,7 +3,7 @@
 
 #include "../Audio/Audio.h"
 
-class Somo14D
+class Somo14D : public Audio
 {
 
 	public:

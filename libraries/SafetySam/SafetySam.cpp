@@ -87,6 +87,9 @@ void SafetySam::update() {
 		}
 	}
 	else if( !_readyToPlay ) {
+		//necessary as for some reason intial ready is doing something
+		//that makes the ready to play not play back
+		delay(1000);
 		_voice->readyToPlay();
 		saidUpdate = true;
 	}

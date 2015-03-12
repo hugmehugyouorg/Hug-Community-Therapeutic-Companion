@@ -32,7 +32,7 @@ class SafetySam {
 		static const uint8_t STATE_BITS = 6;
 		
 		//WATCHDAWG
-		static const unsigned long WATCHDAWG_SHOULD_BITE = 300000; //30000 = 30 seconds, 300000 = 5 minutes
+		static const unsigned long WATCHDAWG_SHOULD_BITE = 299000; //30000 = 30 seconds, 300000 = 5 minutes
 };
 
 #endif // SAFETY_SAM_H

@@ -39,7 +39,7 @@
 //#include <MemoryFree.h>
 
 //whether to be in debug mode or not
-//#define SAFETY_SAM_DEBUG 1
+#define SAFETY_SAM_DEBUG 1
 
 //wifi pin (RX/UART Receive)
 #define WIFI_PIN 0
@@ -237,7 +237,7 @@ void loop(){
 
 void waitForSerialMonitor() {
  // allow a little time to connect the serialMonitor before running the rest of the setup.
-  for (int i = 10; i>0; i--) {
+  for (int i = 0; i>0; i--) {
     delay(1000);
     #ifdef SAFETY_SAM_DEBUG
       Serial.print(F(" "));
@@ -249,4 +249,3 @@ void waitForSerialMonitor() {
     Serial.println(F("------- SERIAL MONITOR READY -------"));
   #endif
 }
-
